@@ -7,21 +7,22 @@ type AuthContextType = {
     setAccessToken: (token?: string) => void;
     login: (username: string, password: string) => Promise<void>;
     logout: () => void;
+    isAuthenticated: () => boolean;
   };
   
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessTokenState] = useState<string | undefined>(() =>
-    sessionStorage.getItem("accessToken") || undefined
+    localStorage.getItem("accessToken") || undefined
   );
 
   const setAccessToken = (token?: string) => {
     setAccessTokenState(token);
     if (token) {
-      sessionStorage.setItem("accessToken", token);
+      localStorage.setItem("accessToken", token);
     } else {
-      sessionStorage.removeItem("accessToken");
+      localStorage.removeItem("accessToken");
     }
   };
 
@@ -37,8 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(undefined);
   };
 
+  const isAuthenticated = () => !!accessToken;
+
   return (
-    <AuthContext.Provider value={{ accessToken, setAccessToken, login, logout}}>
+    <AuthContext.Provider value={{ accessToken, setAccessToken, login, logout, isAuthenticated}}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import '@/styles/custom-scrollbar.css';
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { useState, ReactNode } from "react";
 
@@ -24,13 +24,15 @@ interface DataTableProps<T> {
   columns: ColumnDef<T>[];
   getRowKey: (record: T) => string;
   onRowClick?: (record: T) => void;
+  maxHeight?: string;
 }
 
 export function DataTable<T extends Record<string, any>>({ 
   data, 
   columns,
   getRowKey,
-  onRowClick 
+  onRowClick,
+  maxHeight = "calc(100vh - 300px)"
 }: DataTableProps<T>) {
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -79,65 +81,70 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            {columns.map((column) => (
-              <TableHead 
-                key={column.key}
-                className={column.headerClassName}
-              >
-                {column.sortable ? (
-                  <button
-                    onClick={() => handleSort(column.key)}
-                    className="flex items-center font-medium text-xs uppercase tracking-wide hover-elevate active-elevate-2 px-2 py-1 rounded -mx-2"
-                  >
-                    {column.header}
-                    <SortIcon field={column.key} />
-                  </button>
-                ) : (
-                  <span className="font-medium text-xs uppercase tracking-wide">
-                    {column.header}
-                  </span>
-                )}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedData.length === 0 ? (
-            <TableRow>
-              <TableCell 
-                colSpan={columns.length} 
-                className="h-24 text-center text-muted-foreground"
-              >
-                No data found
-              </TableCell>
+    <div className="rounded-md border border-gray-400 overflow-hidden">
+      <div 
+        className="overflow-auto custom-scrollbar"
+        style={{ maxHeight }}
+      >
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80">
+            <TableRow className="hover:bg-muted/50">
+              {columns.map((column) => (
+                <TableHead 
+                  key={column.key}
+                  className={column.headerClassName}
+                >
+                  {column.sortable ? (
+                    <button
+                      onClick={() => handleSort(column.key)}
+                      className="flex items-center font-medium text-xs uppercase tracking-wide hover-elevate active-elevate-2 px-2 py-1 rounded -mx-2"
+                    >
+                      {column.header}
+                      <SortIcon field={column.key} />
+                    </button>
+                  ) : (
+                    <span className="font-medium text-xs uppercase tracking-wide">
+                      {column.header}
+                    </span>
+                  )}
+                </TableHead>
+              ))}
             </TableRow>
-          ) : (
-            sortedData.map((record) => (
-              <TableRow
-                key={getRowKey(record)}
-                className={onRowClick ? "hover-elevate cursor-pointer" : "hover-elevate"}
-                onClick={() => onRowClick?.(record)}
-              >
-                {columns.map((column) => (
-                  <TableCell 
-                    key={column.key}
-                    className={column.className}
-                  >
-                    {column.render 
-                      ? column.render(record) 
-                      : record[column.key]
-                    }
-                  </TableCell>
-                ))}
+          </TableHeader>
+          <TableBody>
+            {sortedData.length === 0 ? (
+              <TableRow>
+                <TableCell 
+                  colSpan={columns.length} 
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No data found
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              sortedData.map((record) => (
+                <TableRow
+                  key={getRowKey(record)}
+                  className={onRowClick ? "hover-elevate cursor-pointer" : "hover-elevate"}
+                  onClick={() => onRowClick?.(record)}
+                >
+                  {columns.map((column) => (
+                    <TableCell 
+                      key={column.key}
+                      className={column.className}
+                    >
+                      {column.render 
+                        ? column.render(record) 
+                        : record[column.key]
+                      }
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

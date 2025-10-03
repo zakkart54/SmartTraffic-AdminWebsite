@@ -5,16 +5,51 @@ import { useAuth } from "./useAuth";
 export const useReport = () => {
   const { accessToken } = useAuth();
 
-  const getAllReport = async () => {
-    console.log("Fetching all reports with access token:", accessToken);
-    const response = await api.get<any>(`${API_URL}/report/`,
+  const getAllReport = async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const response = await api.get<any>(`${API_URL}/report/?${params.toString()}`,
       { headers: { Authorization: accessToken } }
     );
     return response;
   };
 
-  const getAllUnqualifiedReport = async () => {
-    const response = await api.get<any>(`${API_URL}/report/notQualified`,
+  const getAllUnqualifiedReport = async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const response = await api.get<any>(`${API_URL}/report/notQualified?${params.toString()}`,
+      { headers: { Authorization: accessToken } }
+    );
+    return response;
+  };
+
+  const getAllValidReport = async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const response = await api.get<any>(`${API_URL}/report/valid?${params.toString()}`,
+      { headers: { Authorization: accessToken } }
+    );
+    return response;
+  };
+
+  const getAllNeededValidationReport = async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const response = await api.get<any>(`${API_URL}/report/neededValidation?${params.toString()}`,
+      { headers: { Authorization: accessToken } }
+    );
+    return response;
+  };
+
+  const getAllInvalidReport = async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+    const response = await api.get<any>(`${API_URL}/report/invalid?${params.toString()}`,
       { headers: { Authorization: accessToken } }
     );
     return response;
@@ -39,5 +74,5 @@ export const useReport = () => {
     }
   );
 
-  return { getAllUnqualifiedReport, getReportDetail, manualVerify, getAllReport };
+  return { getAllUnqualifiedReport, getReportDetail, manualVerify, getAllReport, getAllValidReport, getAllNeededValidationReport, getAllInvalidReport};
 };

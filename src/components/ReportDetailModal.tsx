@@ -11,11 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBadge } from "./ScoreBadge";
 import { DataRecord, ApprovalTag } from "@/shared/types";
-import { CheckCircle, XCircle, ImageIcon, FileText, MapPin, Calendar, Clock, IdCard } from "lucide-react";
+import { CheckCircle, XCircle, ImageIcon, FileText, MapPin, Calendar, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useData } from "@/hooks/useData";
-import {useReport} from "@/hooks/useReport";
+import { useReport } from "@/hooks/useReport";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReportDetailModalProps {
   data: DataRecord;
@@ -30,15 +31,22 @@ export function ReportDetailModal({
   onOpenChange,
   onReload
 }: ReportDetailModalProps) {
+  if(data === null || data === undefined) return null;
   const [showApprovalOptions, setShowApprovalOptions] = useState(false);
   const [selectedTags, setSelectedTags] = useState<ApprovalTag[]>([]);
-  const [detailData, setDetailData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast()
+  const [imageData, setImageData] = useState<any>(null);
+  const [textData, setTextData] = useState<any>(null);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [loadingText, setLoadingText] = useState(false);
+  const { toast } = useToast();
   const { getDataDetail } = useData();
   const { manualVerify } = useReport();
 
   const [confirmRejectOpen, setConfirmRejectOpen] = useState(false);
+
+  const hasImage = !!(data.metadata?.dataImgID || data.dataImgID);
+  const hasText = !!(data.metadata?.dataTextID || data.dataTextID);
+  const hasBoth = hasImage && hasText;
 
   const resetStates = () => {
     setSelectedTags([]);
@@ -54,11 +62,11 @@ export function ReportDetailModal({
     const rejectData = {
       id: data.id,
       valid: false,
-      status:  {
-        Obstacle:false,
-        Flooded:false,
-        TrafficJam:false,
-        Police:false
+      status: {
+        Obstacle: false,
+        Flooded: false,
+        TrafficJam: false,
+        Police: false
       },
     };
     try {
@@ -70,7 +78,7 @@ export function ReportDetailModal({
               title: "Success",
               description: "Manual verify thành công.",
               color: "green"
-            })
+            });
             resetStates();
             onOpenChange(false);
             onReload();
@@ -82,7 +90,7 @@ export function ReportDetailModal({
                 err instanceof Error ? err.message : "Manual verify thất bại",
               variant: "destructive",
               color: "red"
-            })
+            });
           }
         }
       );
@@ -91,7 +99,7 @@ export function ReportDetailModal({
         title: "Error",
         description: err as any,
         variant: "destructive",
-      })
+      });
     }
     resetStates();
     onOpenChange(false);
@@ -102,7 +110,7 @@ export function ReportDetailModal({
       setShowApprovalOptions(true);
       return;
     }
-  
+
     if (selectedTags.length === 0) {
       return;
     }
@@ -124,11 +132,11 @@ export function ReportDetailModal({
       const verifyData = {
         id: data.id,
         valid: true,
-        status:  {
-          Obstacle:false,
-          Flooded:false,
-          TrafficJam:false,
-          Police:false,
+        status: {
+          Obstacle: false,
+          Flooded: false,
+          TrafficJam: false,
+          Police: false,
           ...mappedStatus
         },
       };
@@ -141,7 +149,7 @@ export function ReportDetailModal({
               title: "Success",
               description: "Manual verify thành công.",
               color: "green"
-            })
+            });
             resetStates();
             onOpenChange(false);
             onReload();
@@ -153,7 +161,7 @@ export function ReportDetailModal({
                 err instanceof Error ? err.message : "Manual verify thất bại",
               variant: "destructive",
               color: "red"
-            })
+            });
           }
         }
       );
@@ -162,28 +170,47 @@ export function ReportDetailModal({
         title: "Error",
         description: err as any,
         variant: "destructive",
-      })
+      });
     }
     resetStates();
     onOpenChange(false);
   };
 
   useEffect(() => {
-    if (data?.dataID && open) {
-      setLoading(true);
-      const fetchDetail = async () => {
+    const imgID = data.metadata?.dataImgID || data.dataImgID;
+    if (imgID && open) {
+      setLoadingImage(true);
+      const fetchImageDetail = async () => {
         try {
-          const result = await getDataDetail(data.dataID);
-          setDetailData(result);
+          const result = await getDataDetail(imgID);
+          setImageData(result);
         } catch (error) {
-          console.error("Error fetching detail:", error);
+          console.error("Error fetching image detail:", error);
         } finally {
-          setLoading(false);
+          setLoadingImage(false);
         }
       };
-      fetchDetail();
+      fetchImageDetail();
     }
-  }, [data?.dataID, open]);
+  }, [data.metadata?.dataImgID, data.dataImgID, open]);
+
+  useEffect(() => {
+    const txtID = data.metadata?.dataTextID || data.dataTextID;
+    if (txtID && open) {
+      setLoadingText(true);
+      const fetchTextDetail = async () => {
+        try {
+          const result = await getDataDetail(txtID);
+          setTextData(result);
+        } catch (error) {
+          console.error("Error fetching text detail:", error);
+        } finally {
+          setLoadingText(false);
+        }
+      };
+      fetchTextDetail();
+    }
+  }, [data.metadata?.dataTextID, data.dataTextID, open]);
 
   if (!data) return null;
 
@@ -197,13 +224,14 @@ export function ReportDetailModal({
   const handleClose = () => {
     setShowApprovalOptions(false);
     setSelectedTags([]);
-    setDetailData(null);
+    setImageData(null);
+    setTextData(null);
     onOpenChange(false);
   };
 
   const toggleTag = (tag: ApprovalTag) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -212,50 +240,107 @@ export function ReportDetailModal({
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+      const date = new Date(dateString);
+      return new Date(date.setHours(date.getHours()-7)).toLocaleString('vi-VN');
     } catch {
       return dateString;
     }
   };
 
-  const renderContent = () => {
-    if (loading) {
-      return <div className="text-center py-8 text-muted-foreground">Loading content...</div>;
+  const renderImageContent = () => {
+    if (loadingImage) {
+      return <div className="text-center py-8 text-muted-foreground">Loading image...</div>;
     }
 
-    if (!detailData?.content) {
+    if (!imageData?.content) {
+      return <div className="text-center py-8 text-muted-foreground">No image available</div>;
+    }
+
+    return (
+      <div className="rounded-md border overflow-hidden">
+        <img
+          src={`data:${imageData.image?.contentType || 'image/jpeg'};base64,${imageData.content.content}`}
+          alt={data.id}
+          className="w-full h-auto max-h-96 object-contain bg-muted"
+          data-testid="image-content"
+        />
+      </div>
+    );
+  };
+
+  const renderTextContent = () => {
+    if (loadingText) {
+      return <div className="text-center py-8 text-muted-foreground">Loading text...</div>;
+    }
+
+    if (!textData?.content) {
+      return <div className="text-center py-8 text-muted-foreground">No text available</div>;
+    }
+
+    return (
+      <div className="rounded-md bg-muted p-4">
+        <pre className="text-sm whitespace-pre-wrap" data-testid="text-content">
+          {textData.content.content}
+        </pre>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (!hasBoth) {
+      if (hasImage) {
+        return renderImageContent();
+      } else if (hasText) {
+        return renderTextContent();
+      }
       return <div className="text-center py-8 text-muted-foreground">No content available</div>;
     }
 
-    const contentData = detailData.content;
+    return (
+      <Tabs defaultValue="image" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="image" className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4" />
+            Image
+          </TabsTrigger>
+          <TabsTrigger value="text" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Text
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="image" className="mt-4">
+          {renderImageContent()}
+        </TabsContent>
+        <TabsContent value="text" className="mt-4">
+          {renderTextContent()}
+        </TabsContent>
+      </Tabs>
+    );
+  };
 
-    if (contentData.type === 'image') {
-      return (
-        <div className="mt-1 rounded-md border overflow-hidden">
-          <img 
-            src={`data:${detailData.image?.contentType || 'image/jpeg'};base64,${contentData.content}`}
-            alt={data.id}
-            className="w-full h-auto max-h-96 object-contain bg-muted"
-            data-testid="image-content"
-          />
-        </div>
-      );
-    } else {
-      return (
-        <div className="mt-1 rounded-md bg-muted p-4">
-          <pre className="text-sm whitespace-pre-wrap" data-testid="text-content">
-            {contentData.content}
-          </pre>
-        </div>
-      );
-    }
+  const detailData = imageData || textData;
+  const status = hasImage ? imageData?.status : hasText ? textData?.status : null;
+
+  const renderStatus = (status:any) => {  
+    if (!status || !status.statuses) return null;
+    const flagConfig = [
+      { key: "FloodedFlag", label: "Flooded" },
+      { key: "ObstaclesFlag", label: "Obstacles" },
+      { key: "PoliceFlag", label: "Police" },
+      { key: "TrafficJamFlag", label: "Traffic Jam" },
+    ];
+  
+    return (
+      <div className="flex gap-2 mt-1 flex-wrap justify-items-center items-center">
+        {flagConfig.map(({ key, label }) =>
+          status?.statuses?.[key] ? (
+            <Badge key={key} variant="default">
+              {label}
+            </Badge>
+          ) : null
+        )}
+      </div>
+    );
   };
 
   return (
@@ -269,12 +354,23 @@ export function ReportDetailModal({
                   {data.id}
                 </DialogTitle>
                 <DialogDescription className="mt-2 flex items-center gap-2">
-                  {data.contentType === 'image' ? (
-                    <ImageIcon className="h-4 w-4" />
+                  {hasBoth ? (
+                    <>
+                      <ImageIcon className="h-4 w-4" />
+                      <FileText className="h-4 w-4" />
+                      <span>Image & Text Content</span>
+                    </>
+                  ) : hasImage ? (
+                    <>
+                      <ImageIcon className="h-4 w-4" />
+                      <span>Image Content</span>
+                    </>
                   ) : (
-                    <FileText className="h-4 w-4" />
+                    <>
+                      <FileText className="h-4 w-4" />
+                      <span>Text Content</span>
+                    </>
                   )}
-                  {data.contentType === 'image' ? 'Image Content' : 'Text Content'}
                 </DialogDescription>
               </div>
               <div className="flex gap-2">
@@ -299,7 +395,7 @@ export function ReportDetailModal({
                   Upload Time
                 </label>
                 <p className="mt-1 text-sm font-mono" data-testid="text-submitted-at">
-                  {detailData?.data?.uploadTime ? formatDate(detailData.data.uploadTime) : data.submittedAt}
+                  {data.submittedAt}
                 </p>
               </div>
             </div>
@@ -311,7 +407,7 @@ export function ReportDetailModal({
                   Location
                 </label>
                 <p className="mt-1 text-sm font-mono" data-testid="text-location">
-                  {String (data.metadata?.location || 'N/A')}
+                  {String(data.metadata?.location || 'N/A')}
                 </p>
               </div>
               <div>
@@ -337,18 +433,16 @@ export function ReportDetailModal({
               </div>
               <div>
                 <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Status ID
+                  Status
                 </label>
-                <p className="mt-1 text-sm font-mono" data-testid="text-status-id">
-                  {detailData?.data?.statusID || data.metadata?.statusID || 'N/A'}
-                </p>
+                  {renderStatus(status)}
               </div>
               <div>
                 <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Qualified
                 </label>
                 <p className="mt-1 text-sm" data-testid="text-qualified">
-                  <Badge variant={data.metadata?.qualified ? "default" : "outline"}>
+                  <Badge variant={data.metadata?.qualified ? "default" : "destructive"}>
                     {data.metadata?.qualified ? "Yes" : "No"}
                   </Badge>
                 </p>
@@ -380,7 +474,9 @@ export function ReportDetailModal({
               <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Content
               </label>
-              {renderContent()}
+              <div className="mt-1">
+                {renderContent()}
+              </div>
             </div>
 
             {data.approvalTags && data.approvalTags.length > 0 && (
@@ -395,17 +491,6 @@ export function ReportDetailModal({
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {detailData?.content?.source && (
-              <div>
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Source File
-                </label>
-                <p className="mt-1 text-xs font-mono text-muted-foreground" data-testid="text-source">
-                  {detailData.content.source}
-                </p>
               </div>
             )}
 
@@ -453,7 +538,7 @@ export function ReportDetailModal({
                   data-testid="button-reject"
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                   Reject
+                  Reject
                 </Button>
                 <Button
                   onClick={handleApprove}

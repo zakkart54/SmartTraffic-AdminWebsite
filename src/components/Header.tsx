@@ -15,7 +15,7 @@ export function Header() {
   const {accessToken, logout} = useAuth();
   const navigate = useNavigate();
   return (
-    <header className="border-b sticky top-0 bg-background z-10">
+    <header className="border-b sticky top-0 bg-background dark:bg-gray-900 bg-gray-300 z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

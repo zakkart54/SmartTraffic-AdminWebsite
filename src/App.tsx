@@ -3,10 +3,11 @@ import { Layout } from "./components/Layout";
 import  LoginPage  from "./pages/LoginPage";
 import  ReportManagement  from "./pages/ReportManagement";
 import NotFound from "./pages/not-found";
-import { AuthProvider } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster"
+import { useToast } from "./hooks/use-toast";
 
 function Dashboard() {
   return (
@@ -26,49 +27,18 @@ function DataManagement() {
   );
 }
 
-function Analytics() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Analytics</h1>
-      <p className="text-muted-foreground">View analytics and reports</p>
-    </div>
-  );
-}
-
-function Submissions() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Submissions</h1>
-      <p className="text-muted-foreground">View all submissions</p>
-    </div>
-  );
-}
-
-function Users() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Users</h1>
-      <p className="text-muted-foreground">Manage users</p>
-    </div>
-  );
-}
-
-function Settings() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Settings</h1>
-      <p className="text-muted-foreground">Configure your settings</p>
-    </div>
-  );
-}
-
-// Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
   
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!isAuthenticated()) {
+    toast({
+      title: "Authentication Required",
+      description: "Please log in to access this page.",
+      variant: "destructive",
+    });
+    return <Navigate to="/login" replace />;
+  }
   
   return <>{children}</>;
 }
@@ -91,10 +61,6 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/data" element={<DataManagement />} />
             <Route path="/report" element={<ReportManagement />} />
-            {/* <Route path="/analytics" element={<Analytics />} />
-            <Route path="/submissions" element={<Submissions />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/settings" element={<Settings />} /> */}
           </Route>
 
           <Route path="*" element={<NotFound />} />
