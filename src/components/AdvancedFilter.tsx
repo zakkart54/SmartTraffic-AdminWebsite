@@ -10,7 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Filter, X } from "lucide-react";
-import { DataStatus, ContentType } from "@shared/types";
+import { DataStatus, ContentType } from "@/shared/types";
 import { useState } from "react";
 
 export interface FilterState {

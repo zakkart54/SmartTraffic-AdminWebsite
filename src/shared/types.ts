@@ -1,15 +1,15 @@
-export type DataStatus = 'pending' | 'approved' | 'rejected';
 export type ContentType = 'image' | 'text';
 export type ApprovalTag = 'obstacle' | 'flood' | 'trafficjam' | 'police';
 
 export interface DataRecord {
   id: string;
   description: string;
-  status: DataStatus;
+  statusID: string | null; // null = unreviewed, "approved", "rejected"
   score: number; // 0-100
   contentType: ContentType;
   submittedBy: string;
   submittedAt: string;
+  qualified: boolean | null; // null = unreviewed, true = qualified, false = unqualified
   dataID: string; // ID to fetch the actual content
   content: string; // URL for image, text content for text
   metadata?: Record<string, unknown>;

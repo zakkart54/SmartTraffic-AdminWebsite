@@ -1,18 +1,18 @@
 import { useState, useMemo, useEffect } from "react";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { DataDetailModal } from "@/components/DataDetailModal";
+import { ReportDetailModal } from "@/components/ReportDetailModal";
 import { AdvancedFilter, FilterState } from "@/components/AdvancedFilter";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { DataRecord, ApprovalTag } from "@shared/types";
-import { Database, Eye, Image as ImageIcon, FileText } from "lucide-react";
+import { DataRecord, ApprovalTag } from "@/shared/types";
+import { Eye, Image as ImageIcon, FileText } from "lucide-react";
 import { useReport } from "@/hooks/useReport";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScoreBadge } from "@/components/ScoreBadge";
 
 interface ApiDataRecord {
   _id: string;
   createdDate: string;
-  dataImgID: string | null;
+  dataImgID: string;
   dataTextID: string;
   eval: number;
   lat: number;
@@ -24,11 +24,12 @@ interface ApiDataRecord {
   dataID: string;
 }
 
-export default function Dashboard() {
+export default function ReportManagement() {
   const [selectedRecord, setSelectedRecord] = useState<DataRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiData, setApiData] = useState<ApiDataRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"all" | "unqualified">("unqualified"); 
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     status: "all",
@@ -38,36 +39,40 @@ export default function Dashboard() {
     submittedBy: "",
   });
 
-  const { getAllUnqualifiedReport } = useReport();
+  const { getAllUnqualifiedReport, getAllReport } = useReport();
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const data =
+      viewMode === "all"
+        ? await getAllReport()
+        : await getAllUnqualifiedReport();
+      setApiData(data || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setApiData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getAllUnqualifiedReport();
-        setApiData(data || []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setApiData([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [viewMode]);
 
   const transformedData: DataRecord[] = useMemo(() => {
     return apiData.map((record) => ({
       id: record._id,
       description: `Segment: ${record.segmentID}`,
-      status: "pending",
+      statusID: record.statusID ?? null,
       score: Math.round(record.eval * 100),
       dataID: record.dataImgID ? record.dataImgID : record.dataTextID,
       contentType: record.dataImgID ? "image" : "text",
       submittedBy: record.uploaderID,
       submittedAt: new Date(record.createdDate).toLocaleString("vi-VN") ,
       content: record.dataImgID || record.dataTextID,
+      qualified: record.qualified,
       metadata: {
         location: `${record.lat}, ${record.lon}`,
         lat: record.lat,
@@ -102,9 +107,6 @@ export default function Dashboard() {
         record.id.toLowerCase().includes(filters.search.toLowerCase()) ||
         record.description.toLowerCase().includes(filters.search.toLowerCase());
 
-      const matchesStatus =
-        filters.status === "all" || record.status === filters.status;
-
       const matchesContentType =
         filters.contentType === "all" || record.contentType === filters.contentType;
 
@@ -120,21 +122,12 @@ export default function Dashboard() {
 
       return (
         matchesSearch && 
-        matchesStatus && 
         matchesContentType && 
         matchesSubmittedBy &&
         matchesScore
       );
     });
   }, [transformedData, filters]);
-
-  const handleApprove = (id: string, tags: ApprovalTag[]) => {
-    console.log("Approved record:", id, "with tags:", tags);
-  };
-
-  const handleReject = (id: string, reason: string) => {
-    console.log("Rejected record:", id, "Reason:", reason);
-  };
 
   const columns: ColumnDef<DataRecord>[] = [
     {
@@ -177,6 +170,20 @@ export default function Dashboard() {
         </span>
       ),
     },
+    ...(viewMode === "all"
+      ? [
+          {
+            key: "qualified",
+            header: "Qualified",
+            sortable: true,
+            render: (record: DataRecord) => (
+              <Badge variant={record.metadata?.qualified ? "default" : "outline"}>
+                {record.metadata?.qualified ? "Yes" : "No"}
+              </Badge>
+            ),
+          } as ColumnDef<DataRecord>,
+        ]
+      : []),
     {
       key: "score",
       header: "Score",
@@ -205,39 +212,58 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 bg-background z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Database className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-semibold">Data Management</h1>
-                <p className="text-sm text-muted-foreground">
-                  Review and verify data submissions
-                </p>
-              </div>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           <AdvancedFilter
             filters={filters}
             onFiltersChange={setFilters}
-            onClearFilters={handleClearFilters}
+            onClearFilters={() =>
+              setFilters({
+                search: "",
+                status: "all",
+                contentType: "all",
+                minScore: "",
+                maxScore: "",
+                submittedBy: "",
+              })
+            }
           />
 
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {isLoading ? (
-                "Loading..."
-              ) : (
-                <>Showing {filteredData.length} of {transformedData.length} records</>
-              )}
-            </p>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("all")}
+              >
+                All Report
+              </Button>
+              <Button
+                variant={viewMode === "unqualified" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("unqualified")}
+              >
+                Unqualified Report
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                {isLoading ? (
+                  "Loading..."
+                ) : (
+                  <>Showing {apiData.length} records</>
+                )}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={isLoading}
+              >
+                Reload
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -245,8 +271,8 @@ export default function Dashboard() {
               <div className="text-muted-foreground">Loading data...</div>
             </div>
           ) : (
-            <DataTable 
-              data={filteredData} 
+            <DataTable
+              data={filteredData}
               columns={columns}
               getRowKey={(record) => record.id}
               onRowClick={handleViewDetail}
@@ -255,12 +281,13 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <DataDetailModal
-        data={selectedRecord}
+      <ReportDetailModal
+        data={selectedRecord as any}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        onApprove={handleApprove}
-        onReject={handleReject}
+        onReload={fetchData}
+        // onApprove={handleApprove}
+        // onReject={handleReject}
       />
     </div>
   );

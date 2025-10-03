@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(username, password);
-      navigate("/dashboard");
+      navigate("/");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Đăng nhập thất bại");
