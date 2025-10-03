@@ -150,11 +150,11 @@ export default function ReportManagement() {
       className: "font-mono font-medium",
     },
     {
-      key: "createdDate",
+      key: "submittedAt",
       header: "Created Date",
       sortable: true,
       className: "text-sm font-mono",
-      render: (record) => new Date(record.submittedAt).toLocaleString(),
+      render: (record) => record.submittedAt,
     },
     {
       key: "contentType",

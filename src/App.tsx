@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import  LoginPage  from "./pages/LoginPage";
 import  ReportManagement  from "./pages/ReportManagement";
+import DataManagement from "./pages/DataManagement";
 import NotFound from "./pages/not-found";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -14,15 +15,6 @@ function Dashboard() {
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
       <p className="text-muted-foreground">Welcome to the dashboard</p>
-    </div>
-  );
-}
-
-function DataManagement() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Data Management</h1>
-      <p className="text-muted-foreground">Manage your data here</p>
     </div>
   );
 }
