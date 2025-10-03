@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { DataTable, ColumnDef } from "@/components/DataTable";
 import { ReportDetailModal } from "@/components/ReportDetailModal";
-import { AdvancedFilter, FilterState } from "@/components/AdvancedFilter";
-import { DataRecord, ApprovalTag } from "@/shared/types";
+import { DataRecord } from "@/shared/types";
 import { Eye, Image as ImageIcon, FileText } from "lucide-react";
 import { useReport } from "@/hooks/useReport";
 import { Button } from "@/components/ui/button";
@@ -30,14 +29,6 @@ export default function ReportManagement() {
   const [apiData, setApiData] = useState<ApiDataRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"all" | "unqualified">("unqualified"); 
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    status: "all",
-    contentType: "all",
-    minScore: "",
-    maxScore: "",
-    submittedBy: "",
-  });
 
   const { getAllUnqualifiedReport, getAllReport } = useReport();
 
@@ -88,46 +79,6 @@ export default function ReportManagement() {
     setSelectedRecord(record);
     setIsModalOpen(true);
   };
-
-  const handleClearFilters = () => {
-    setFilters({
-      search: "",
-      status: "all",
-      contentType: "all",
-      minScore: "",
-      maxScore: "",
-      submittedBy: "",
-    });
-  };
-
-  const filteredData = useMemo(() => {
-    return transformedData.filter((record) => {
-      const matchesSearch =
-        filters.search === "" ||
-        record.id.toLowerCase().includes(filters.search.toLowerCase()) ||
-        record.description.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesContentType =
-        filters.contentType === "all" || record.contentType === filters.contentType;
-
-      const matchesSubmittedBy =
-        filters.submittedBy === "" ||
-        record.submittedBy
-          .toLowerCase()
-          .includes(filters.submittedBy.toLowerCase());
-
-      const minScore = filters.minScore ? parseInt(filters.minScore) : 0;
-      const maxScore = filters.maxScore ? parseInt(filters.maxScore) : 100;
-      const matchesScore = record.score >= minScore && record.score <= maxScore;
-
-      return (
-        matchesSearch && 
-        matchesContentType && 
-        matchesSubmittedBy &&
-        matchesScore
-      );
-    });
-  }, [transformedData, filters]);
 
   const columns: ColumnDef<DataRecord>[] = [
     {
@@ -214,20 +165,6 @@ export default function ReportManagement() {
     <div className="min-h-screen bg-background">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          <AdvancedFilter
-            filters={filters}
-            onFiltersChange={setFilters}
-            onClearFilters={() =>
-              setFilters({
-                search: "",
-                status: "all",
-                contentType: "all",
-                minScore: "",
-                maxScore: "",
-                submittedBy: "",
-              })
-            }
-          />
 
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
@@ -272,7 +209,7 @@ export default function ReportManagement() {
             </div>
           ) : (
             <DataTable
-              data={filteredData}
+              data={transformedData}
               columns={columns}
               getRowKey={(record) => record.id}
               onRowClick={handleViewDetail}
@@ -286,8 +223,6 @@ export default function ReportManagement() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onReload={fetchData}
-        // onApprove={handleApprove}
-        // onReject={handleReject}
       />
     </div>
   );
