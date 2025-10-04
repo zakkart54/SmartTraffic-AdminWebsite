@@ -40,8 +40,7 @@ export function ReportDetailModal({
   const [loadingText, setLoadingText] = useState(false);
   const { toast } = useToast();
   const { getDataDetail } = useData();
-  const { manualVerify } = useReport();
-
+  const { manualVerify, autoVerify } = useReport();
   const [confirmRejectOpen, setConfirmRejectOpen] = useState(false);
 
   const hasImage = !!(data.metadata?.dataImgID || data.dataImgID);
@@ -175,6 +174,65 @@ export function ReportDetailModal({
     resetStates();
     onOpenChange(false);
   };
+
+  const handleAutoVerify = async () => {
+    try {
+      autoVerify.mutate(data.id,
+        {
+          onSuccess: (res) => {
+            const noti = res?.data?.noti;
+            if (noti === "valid") {
+              toast({
+                title: "Success",
+                description: "Report hợp lệ.",
+                color: "green",
+              });
+            } else if (noti === "needed validation") {
+              toast({
+                title: "Warning",
+                description: "Cần xác thực thủ công.",
+                color: "yellow",
+              });
+            } else if (noti === "invalid") {
+              toast({
+                title: "Failed",
+                description: "Report không hợp lệ.",
+                variant: "destructive",
+                color: "red",
+              });
+            } else {
+              toast({
+                title: "Info",
+                description: "Kết quả không xác định.",
+                color: "blue",
+              });
+            }
+      
+            resetStates();
+            onOpenChange(false);
+            onReload();
+          },
+          onError: (err) => {
+            toast({
+              title: "Error",
+              description:
+                err instanceof Error ? err.message : "Auto verify thất bại",
+              variant: "destructive",
+              color: "red",
+            });
+          }
+        }
+      );
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err as any,
+        variant: "destructive",
+      });
+    }
+    resetStates();
+    onOpenChange(false);
+  }
 
   useEffect(() => {
     const imgID = data.metadata?.dataImgID || data.dataImgID;
@@ -463,15 +521,6 @@ export function ReportDetailModal({
 
             <div>
               <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Description
-              </label>
-              <p className="mt-1 text-sm" data-testid="text-description">
-                {data.description}
-              </p>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Content
               </label>
               <div className="mt-1">
@@ -529,7 +578,7 @@ export function ReportDetailModal({
             >
               Close
             </Button>
-            {!data.statusID && (
+            {detailData?.data?.processed ? (
               <>
                 <Button
                   variant="outline"
@@ -548,6 +597,18 @@ export function ReportDetailModal({
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   {showApprovalOptions ? "Confirm Approval" : "Approve"}
+                </Button>
+              </>
+            ): (
+              <>
+                <Button
+                  onClick={handleAutoVerify}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="button-approve"
+                  disabled={showApprovalOptions && selectedTags.length === 0}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Auto Verify
                 </Button>
               </>
             )}

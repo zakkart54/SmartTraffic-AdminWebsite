@@ -74,5 +74,17 @@ export const useReport = () => {
     }
   );
 
-  return { getAllUnqualifiedReport, getReportDetail, manualVerify, getAllReport, getAllValidReport, getAllNeededValidationReport, getAllInvalidReport};
+  const autoVerify = useApiMutation<any, any>(
+    "GET",
+    `${API_URL}/report/autoVerify`,
+    {
+      mutationFn: async (id: string) => {
+        return api.get<any>(`${API_URL}/report/autoVerify/${id}`, {
+          headers: { Authorization: accessToken },
+        });
+      },
+    }
+  );
+
+  return { getAllUnqualifiedReport, getReportDetail, manualVerify, getAllReport, getAllValidReport, getAllNeededValidationReport, getAllInvalidReport, autoVerify};
 };

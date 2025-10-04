@@ -3,7 +3,6 @@ export type ApprovalTag = 'obstacle' | 'flood' | 'trafficjam' | 'police';
 
 export interface DataRecord {
   id: string;
-  description: string;
   statusID: string | null; // null = unreviewed, "approved", "rejected"
   score: number; // 0-100
   contentType: ContentType;

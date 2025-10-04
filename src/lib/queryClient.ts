@@ -100,7 +100,7 @@ export const queryClient = new QueryClient({
 });
 
 const createMutationFn = <TData = unknown, TVariables = unknown>(
-  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE" | "GET",
   url: string
 ): MutationFunction<TData, TVariables> => {
   return async (variables: TVariables) => {
@@ -113,13 +113,15 @@ const createMutationFn = <TData = unknown, TVariables = unknown>(
         return api.patch<TData>(url, variables);
       case "DELETE":
         return api.delete<TData>(url, { data: variables });
+      case "GET":
+        return api.get<TData>(url);
     }
   };
 };
 
 // Hook dùng mutation
 export const useApiMutation = <TData = unknown, TVariables = unknown>(
-  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE" | "GET",
   url: string,
   options?: UseMutationOptions<TData, unknown, TVariables, unknown>
 ) => {

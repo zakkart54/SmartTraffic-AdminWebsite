@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { DataTable, ColumnDef } from "@/components/DataTable";
-import { ReportDetailModal } from "@/components/ReportDetailModal";
+import { DataDetailModal } from "@/components/DataDetailModal";
 import { Eye, Image, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScoreBadge } from "@/components/ScoreBadge";
+import { useData } from "@/hooks/useData";
 
 interface ApiDataRecord {
   _id: string;
@@ -31,15 +32,27 @@ export default function DataManagement() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
 
+  const { getAllData, getAllImgData, getAllTextData } = useData();
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
       const offset = (currentPage - 1) * pageSize;
 
-      const response = {
-        data: apiData,
-        total: apiData.length,
-      };
+      let response;
+      switch (viewMode) {
+        case "all":
+          response = await getAllData(pageSize, offset);
+          break;
+        case "image":
+          response = await getAllImgData(pageSize, offset);
+          break;
+        case "text":
+          response = await getAllTextData(pageSize, offset);
+          break;
+        default:
+          response = await getAllData(pageSize, offset);
+      }
 
       setApiData(response.data);
       setTotal(response.total);
@@ -57,15 +70,23 @@ export default function DataManagement() {
   }, [viewMode, currentPage, pageSize]);
 
   const transformedData = useMemo(() => {
+    if (!apiData) return [];
     return apiData.map((record) => {
+      const date = new Date(record.uploadTime);
+      const processed_time= record?.processed_time? new Date(record?.processed_time) : null;
       return {
         id: record._id,
         uploaderID: record.uploaderID,
         type: record.type,
-        uploadTime: new Date(record.uploadTime).toLocaleString(),
+        uploadTime: new Date(date.setHours(date.getHours()-7)).toLocaleString(),
         statusID: record.statusID,
         location: record.location ?? "N/A",
         metadata: record,
+        processed: record.processed,
+        processed_time: processed_time ? new Date(processed_time.setHours(processed_time.getHours()-7)).toLocaleString() : null,
+        TrainValTest: record.TrainValTest,
+        reportID: record.reportID,
+        InfoID: record.InfoID,
       };
     });
   }, [apiData]);
@@ -81,7 +102,6 @@ export default function DataManagement() {
 
   const columns: ColumnDef<any>[] = [
     { key: "id", header: "ID", className: "font-mono font-medium" },
-    { key: "uploadTime", header: "Upload Time", className: "text-sm font-mono" },
     {
       key: "type",
       header: "Type",
@@ -99,7 +119,60 @@ export default function DataManagement() {
         </div>
       ),
     },
-    { key: "location", header: "Location" },
+    { 
+      key: "uploadTime",
+      header: "Upload Time",
+      className: "text-sm font-mono",
+      sortable: true
+    },
+    { 
+      key: "location",
+      header: "Location",
+      sortable: true
+    },
+    {
+      key: "processed",
+      header: "Processed",
+      render: (record) => {
+        const variant = record.processed ? "default" : "destructive";
+        const label = record.processed ? "Yes" : "No";
+        return <Badge variant={variant}>{label}</Badge>;},
+      sortable: true
+    },
+    {
+      key: "processed_time",
+      header: "Processed Time",
+      render: (record) => record.processed_time || "N/A",
+      sortable: true
+    },
+    {
+      key: "TrainValTest",
+      header: "Train/Val/Test",
+      render: (record) => {
+        let label = "None";
+        let variant: "default" | "secondary" | "outline" | "destructive";
+    
+        switch (record.TrainValTest) {
+          case 1:
+            label = "Train";
+            variant = "default";
+            break;
+          case 2:
+            label = "Val";
+            variant = "default";
+            break;
+          case 3:
+            label = "Test";
+            variant = "default";
+            break;
+          default:
+            label = "None";
+            variant = "outline";
+        }
+    
+        return <Badge variant={variant}>{label}</Badge>;
+      },
+    },
     {
       key: "actions",
       header: "Actions",
@@ -219,12 +292,12 @@ export default function DataManagement() {
         )}
       </main>
 
-      {/* <ReportDetailModal
-        data={selectedRecord}
+      <DataDetailModal
+        data={selectedRecord as any}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         onReload={fetchData}
-      /> */}
+      />
     </div>
   );
 }

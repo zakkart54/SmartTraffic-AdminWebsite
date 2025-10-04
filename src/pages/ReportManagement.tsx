@@ -20,6 +20,7 @@ interface ApiDataRecord {
   segmentID: string;
   statusID: string | null;
   uploaderID: string;
+  segment?: any;
 }
 
 export default function ReportManagement() {
@@ -96,7 +97,6 @@ export default function ReportManagement() {
       
       return {
         id: record._id,
-        description: `Segment: ${record.segmentID}`,
         statusID: record.statusID ?? null,
         score: Math.round(record.eval * 100),
         dataImgID: record.dataImgID,
@@ -106,6 +106,8 @@ export default function ReportManagement() {
         submittedAt: new Date(date.setHours(date.getHours()-7)).toLocaleString("vi-VN"),
         content: record.dataImgID || record.dataTextID,
         qualified: record.qualified,
+        streetName: record?.segment?.name,
+        streetRef: record?.segment?.ref,
         metadata: {
           location: `${record.lat}, ${record.lon}`,
           lat: record.lat,
@@ -187,13 +189,14 @@ export default function ReportManagement() {
       },
     },
     {
-      key: "location",
-      header: "Location (Lat, Lon)",
+      key: "streetName",
+      header: "Location",
       render: (record: any) => (
         <span className="text-sm">
-          {record.metadata?.location || 'N/A'}
+          {record.streetName || 'N/A'}
         </span>
       ),
+      sortable: true
     },
     ...(viewMode === "all"
       ? [
